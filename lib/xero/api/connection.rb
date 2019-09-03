@@ -84,10 +84,17 @@ class Xero::Api
     def entity_response(data, entity)
       entity_name = entity_handler(entity)
       entity_body = data
-      entity_body.fetch(entity_name) do
-        msg = "#{LOG_TAG} entity name not in that top-level of the response body: entity_name=#{entity_name}"
-        Xero::Api.logger.debug { msg }
+
+      if entity_body.is_a? Array
         data
+      elsif entity_body.key? "Items"
+        entity_body["Items"]
+      else
+        entity_body.fetch(entity_name) do
+          msg = "#{LOG_TAG} entity name not in that top-level of the response body: entity_name=#{entity_name}"
+          Xero::Api.logger.debug { msg }
+          data
+        end
       end
     end
 
