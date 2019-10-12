@@ -1,6 +1,7 @@
 require 'faraday'
 require 'faraday_middleware'
 require 'faraday/detailed_logger'
+require 'oauthenticator'
 
 class Xero::Api
   module Connection
@@ -18,6 +19,7 @@ class Xero::Api
         add_authorization_middleware(conn)
         add_exception_middleware(conn)
         conn.request :url_encoded
+        add_partner_authentication(conn)
         add_connection_adapter(conn)
       end
     end
@@ -28,6 +30,7 @@ class Xero::Api
         add_authorization_middleware(conn)
         add_exception_middleware(conn)
         conn.request :multipart
+        add_partner_authentication(conn)
         add_connection_adapter(conn)
       end
     end
@@ -104,6 +107,17 @@ class Xero::Api
         public_send("add_#{strategy_name}_authorization_middleware", conn)
         true
       end
+    end
+
+    def add_partner_authentication(conn)
+      return unless ENV.fetch("XERO_PRIVATE_KEY").present?
+
+      conn.request :oauthenticator_signer, {
+        signature_method: 'RSA-SHA1',
+        consumer_key: @consumer_key,
+        consumer_secret: ENV.fetch("XERO_PRIVATE_KEY"),
+        token: @token
+      }
     end
 
     require_relative 'connection/oauth1'
