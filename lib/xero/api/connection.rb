@@ -87,6 +87,8 @@ class Xero::Api
 
       if entity_body.is_a? Array
         data
+      elsif entity_body.key? "items"
+        entity_body["items"]
       elsif entity_body.key? "Items"
         entity_body["Items"]
       else
