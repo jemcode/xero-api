@@ -1,11 +1,11 @@
 class Xero::Api
   module Methods
 
-    def get(entity, all: false, id: nil, params: nil, headers: nil, path: nil, modified_since: nil, parse_entity: true)
+    def get(entity, all: false, offset: false, id: nil, params: nil, headers: nil, path: nil, modified_since: nil, parse_entity: true)
       route = build_resource(entity, id: id, params: params, path: path)
       final_headers = handle_headers(headers, modified_since)
       if all
-        enumerator = get_all(entity, path: route, headers: final_headers, parse_entity: parse_entity)
+        enumerator = get_all(entity, path: route, headers: final_headers, parse_entity: parse_entity, offset: offset)
       else
         request(:get, path: route, entity: entity, headers: final_headers, parse_entity: parse_entity)
       end
@@ -48,13 +48,14 @@ class Xero::Api
       { 'If-Modified-Since' => standard_date(modified_since) }
     end
 
-    def get_all(entity, path:, headers:, parse_entity:)
+    def get_all(entity, path:, headers:, parse_entity:, offset:)
       max = 100
       Enumerator.new do |enum_yielder|
         number = 0
         begin
+          params = offset ? { offset: number * max } : { page: number }
           number += 1
-          paged_path = add_params(route: path, params: { page: number })
+          paged_path = add_params(route: path, params: params)
           results = request(:get, path: paged_path, entity: entity, headers: headers, parse_entity: parse_entity)
           results.each do |result|
             enum_yielder.yield(result)
